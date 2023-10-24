@@ -7,10 +7,55 @@
 
 using namespace std;
 
+std::string wrap_content( const string& host, const string& path )
+{
+  std::string s = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n";
+  return s;
+}
+
+void print_content( const string& content )
+{
+  cout << "print content:\n\n-----------------\n" << content << "\n-----------------\n" << endl;
+}
+
 void get_URL( const string& host, const string& path )
 {
-  cerr << "Function called: get_URL(" << host << ", " << path << ")\n";
-  cerr << "Warning: get_URL() has not been implemented yet.\n";
+  // cerr << "Function called: get_URL(" << host << ", " << path << ")\n";
+  // Get content to send.
+  auto content = wrap_content( host, path );
+  std::string buffer = std::string();
+
+  // init socket.
+  std::string servname = "80";
+  auto peer_addr = Address( host, servname );
+  auto tcp_endpoint = TCPSocket();
+  tcp_endpoint.connect( peer_addr );
+
+  // Send content to destination.
+  tcp_endpoint.write( content );
+
+  // Got response.
+  std::string response_raw = std::string();
+  tcp_endpoint.read( buffer );
+
+  response_raw.append( buffer );
+  while ( !tcp_endpoint.eof() ) {
+    tcp_endpoint.read( buffer );
+    response_raw.append( buffer );
+  }
+
+  // first rstrip xxx .. hash\r\n into xxx .. hash
+  std::string delimitor = "\r\n";
+  auto sp_size = delimitor.size() >> 1;
+  auto tripped_content = response_raw.substr( 0, response_raw.size() - sp_size );
+  auto index = tripped_content.find_last_of( delimitor );
+
+  // extract hash from response
+  auto hash = tripped_content.substr( index + sp_size, tripped_content.size() );
+
+  cout << hash << endl;
+
+  tcp_endpoint.close();
 }
 
 int main( int argc, char* argv[] )
