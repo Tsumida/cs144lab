@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <iostream>
 #include <stdexcept>
@@ -15,8 +16,22 @@ void print_state(Reader* r)
   std::cout << "reader r.byte_poped=" << r->bytes_popped() << endl;
 }
 
+uint64_t get_buffered_num(uint64_t written, uint64_t popped){
+  return written - popped;
+}
+
+bool is_all_popped(uint64_t written, uint64_t popped){
+  return written == popped;
+}
+
+//
+
 ByteStream::ByteStream( uint64_t capacity )
-  : capacity_( capacity ), byte_written( 0 ), byte_popped( 0 ), is_stream_closed( false ), has_err( false )
+  : capacity_( capacity ), 
+  byte_written( 0 ), 
+  byte_popped( 0 ), 
+  is_stream_closed( false ), 
+  has_err( false )
 {
   this->buffer = std::string();
   this->buffer.resize( static_cast<std::size_t>( capacity ) );
@@ -28,13 +43,18 @@ ByteStream::ByteStream( uint64_t capacity )
 void Writer::push( string data )
 {
   // Your code here.
-  if ( this->is_closed() || data.empty()) {
+  if ( this->is_closed()) {
     return;
   }
 
-  auto incr = min( this->available_capacity(), data.size() );
-  this->byte_written += incr;
-  this->buffer.append( data.substr( 0, incr ) );
+  auto n = this->available_capacity();
+  auto s = data.size();
+  this->byte_written +=  min( n, s );
+  if (n >= s){
+    this->buffer.append(data);
+  }else{
+    this->buffer.append( data.substr( 0, n ) );
+  }
 }
 
 void Writer::close()
@@ -58,10 +78,7 @@ bool Writer::is_closed() const
 uint64_t Writer::available_capacity() const
 {
   // Your code here.
-  if ( this->buffer.size() > this->capacity_ ) {
-    return 0;
-  }
-  return this->capacity_ - this->buffer.size();
+  return this->capacity_ - get_buffered_num(this->byte_written, this->byte_popped);
 }
 
 uint64_t Writer::bytes_pushed() const
@@ -73,18 +90,13 @@ uint64_t Writer::bytes_pushed() const
 // string_view for unify both const char* and const string&
 string_view Reader::peek() const
 {
-  // note: consider its empty
-  // if ( this->buffer.empty() ) {
-  //   return { "" };
-  // }
-
-  return { &this->buffer.front(), 1 };
+  return { &this->buffer[this->byte_popped], 1 };
 }
 
 bool Reader::is_finished() const
 {
   // Your code here.
-  return this->is_stream_closed && this->buffer.empty();
+  return this->is_stream_closed && is_all_popped(this->byte_written, this->byte_popped);
 }
 
 bool Reader::has_error() const
@@ -95,29 +107,15 @@ bool Reader::has_error() const
 
 void Reader::pop( uint64_t len )
 {
-  if ( this->is_stream_closed ) {
-    return;
-  }
-
-  auto size = this->buffer.size();
+  auto size = this->bytes_buffered();
   auto incr = min( len, size );
   this->byte_popped += incr;
-
-  if ( len >= size ) {
-    this->buffer.clear();
-    return;
-  }
-
-  // pop      [0, len)
-  // reserve  [len, size)
-  this->buffer = this->buffer.substr( len, size );
-  print_state(this);
 }
 
 uint64_t Reader::bytes_buffered() const
 {
   // Your code here.
-  return this->buffer.size();
+  return this->byte_written - this->byte_popped;
 }
 
 uint64_t Reader::bytes_popped() const
