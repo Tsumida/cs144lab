@@ -7,6 +7,14 @@
 
 using namespace std;
 
+
+// tools for debugging
+void print_state(Reader* r) 
+{
+  std::cout << "reader r.byte_buffered=" << r->bytes_buffered() << endl;
+  std::cout << "reader r.byte_poped=" << r->bytes_popped() << endl;
+}
+
 ByteStream::ByteStream( uint64_t capacity )
   : capacity_( capacity ), byte_written( 0 ), byte_popped( 0 ), is_stream_closed( false ), has_err( false )
 {
@@ -20,7 +28,7 @@ ByteStream::ByteStream( uint64_t capacity )
 void Writer::push( string data )
 {
   // Your code here.
-  if ( this->is_closed() ) {
+  if ( this->is_closed() || data.empty()) {
     return;
   }
 
@@ -66,9 +74,9 @@ uint64_t Writer::bytes_pushed() const
 string_view Reader::peek() const
 {
   // note: consider its empty
-  if ( this->buffer.empty() ) {
-    return { "" };
-  }
+  // if ( this->buffer.empty() ) {
+  //   return { "" };
+  // }
 
   return { &this->buffer.front(), 1 };
 }
@@ -97,13 +105,13 @@ void Reader::pop( uint64_t len )
 
   if ( len >= size ) {
     this->buffer.clear();
-    this->buffer.resize( this->capacity_ );
     return;
   }
 
   // pop      [0, len)
   // reserve  [len, size)
   this->buffer = this->buffer.substr( len, size );
+  print_state(this);
 }
 
 uint64_t Reader::bytes_buffered() const

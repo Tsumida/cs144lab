@@ -7,6 +7,7 @@
 
 using namespace std;
 
+
 std::string wrap_content( const string& host, const string& path )
 {
   std::string s = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n";
@@ -45,10 +46,10 @@ void get_URL( const string& host, const string& path )
   }
 
   // first rstrip xxx .. hash\r\n into xxx .. hash
-  std::string delimitor = "\r\n";
-  auto sp_size = delimitor.size() >> 1;
+  std::string CRLF = "\r\n";
+  auto sp_size = CRLF.size() >> 1;
   auto tripped_content = response_raw.substr( 0, response_raw.size() - sp_size );
-  auto index = tripped_content.find_last_of( delimitor );
+  auto index = tripped_content.find_last_of( CRLF );
 
   // extract hash from response
   auto hash = tripped_content.substr( index + sp_size, tripped_content.size() );

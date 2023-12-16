@@ -11,7 +11,7 @@ int main()
   try {
     {
       ByteStreamTestHarness test { "overwrite", 2 };
-
+ 
       test.execute( Push { "cat" } );
       test.execute( IsClosed { false } );
       test.execute( BufferEmpty { false } );
