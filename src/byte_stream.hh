@@ -25,7 +25,7 @@ protected:
   mutable uint64_t byte_popped;
   mutable bool is_stream_closed;
   mutable bool has_err;
-  // mutable uint64_t header;
+  mutable uint64_t truncated;
 
 public:
   explicit ByteStream( uint64_t capacity );
